@@ -1,2 +1,2 @@
-# lhr_
+# llama_chinese_jittor
 llama_chinese_jittor
