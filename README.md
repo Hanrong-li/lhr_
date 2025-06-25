@@ -1,2 +1,1 @@
-# llama_chinese_jittor
-llama_chinese_jittor
+# 看 master 分支
