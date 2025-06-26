@@ -195,51 +195,6 @@ def remove_dataset_duplicate_rows(groups_cnt: int=50000) -> None:
     log.info("merge into file: {}, 全部数据共{}行，文档去重后剩余{}行".format(save_file, all_cnt, keep_cnt), save_to_file=True)
 
 
-def remove_dataset_duplicate_rows_simhash(groups_cnt: int = 50000) -> None:
-    '''
-    使用sim_hash删除数据集中重复的部分
-    '''
-    from_parquet_files = '../data/563w_baidubaike/baike.parquet'
-
-    save_file = '../data/563w_baidubaike/all_no_dulpticates_simhash.parquet'
-
-    # 后续append写入，存在文件先删除
-    if exists(save_file):
-        assert delete_file(save_file)
-
-    cur_rows = []
-    all_cnt, keep_cnt = 0, 0
-    row_index = -1
-
-    parquet_table = pq.read_table(from_parquet_files)
-    all_cnt = parquet_table.num_rows
-    print(all_cnt)
-    drop_dataset_duplicate = DropDatasetDuplicate_SimHash(threshold=3, f=128)
-    # 先顺序遍历获取哪些行是重复的
-    for response in progress.track(parquet_table['response'], total=parquet_table.num_rows):
-        row_index += 1
-
-        doc = f"{response.as_py()}"
-        drop_dataset_duplicate.add_doc(index=row_index, doc=doc)
-
-    droped_database = drop_dataset_duplicate.database
-
-    # 写入去重后的数据
-    for k, v in droped_database.items():
-        cur_rows.append({'response': v})
-        keep_cnt += 1
-
-        # 分块写入
-        if len(cur_rows) >= groups_cnt:
-            df = pd.DataFrame(cur_rows)
-            write_single_parquet_file(save_file, df)
-            cur_rows = []
-    # 处理末尾部分，并写入
-    if len(cur_rows) > 0:
-        df = pd.DataFrame(cur_rows)
-        write_single_parquet_file(save_file, df)
-    log.info("merge into file: {}, 全部数据共{}行，文档去重后剩余{}行".format(save_file, all_cnt, keep_cnt),
-             save_to_file=True)
 
 def shuffle_parquet_dataset(parquet_file: str, shuffle_file: str, seed: int=23333, groups_cnt: int=65536) -> None:
     '''
