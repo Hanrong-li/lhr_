@@ -176,7 +176,8 @@ if __name__ == "__main__":
     vocab_size = 64793  # 词汇表大小
     learning_rate = 3e-4
     weight_decay = 1e-1
-    beta = 1
+    beta1= 0.9
+    beta2= 0.95
     grad_clip = 1.0
     decay_lr = True
     warmup_iters = 1000
@@ -232,7 +233,7 @@ if __name__ == "__main__":
     model = init_model()
 
     # 初始化优化器
-    optimizer = model.configure_optimizers(weight_decay, learning_rate, beta)
+    optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1, beta2))
 
     # 初始化数据集
     data_path_list = [
