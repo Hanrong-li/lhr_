@@ -5,7 +5,7 @@
 
 注：参考了许多相关资料，详见主要参考部分。
 
-注：llama1论文对应源码未开源，但他们主要结构基本一致，只是上下文长度变化以及训练时优化器等参数设置不同，所以本项目代码是参照相关llama2代码改进的。
+注：llama1论文对应源码未开源，但他们主要结构基本一致，是上下文长度变化、数据集大小以及注意力机制不同，所以本项目代码是参照相关llama2代码改进的。
 
 # 主要内容 
 以下是主要内容目录：
@@ -396,7 +396,8 @@ if __name__ == "__main__":
     vocab_size = 64793 
     learning_rate = 3e-4
     weight_decay = 1e-1
-    beta = 1
+    beta1 = 1
+    beta2 = 2
     grad_clip = 1.0
     decay_lr = True
     warmup_iters = 1000
@@ -452,7 +453,7 @@ if __name__ == "__main__":
     model = init_model()
 
     # 初始化优化器
-    optimizer = model.configure_optimizers(weight_decay, learning_rate, beta)
+    optimizer = model.configure_optimizers(weight_decay, learning_rate, (beta1,beta2))
 
     # 初始化数据集
     data_path_list = [
