@@ -41,7 +41,7 @@ class RMSNorm(Module):
 
 def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     freqs = 1.0 / (theta ** (jt.arange(0, dim, 2)[: (dim // 2)].float() / dim))
-    t = jt.arange(end) # Jittor 自动处理设备
+    t = jt.arange(end)
     freqs = jt.outer(t, freqs).float()
     freqs_cos = jt.cos(freqs)
     freqs_sin = jt.sin(freqs)
@@ -119,7 +119,6 @@ class Attention(Module):
         self.resid_dropout = nn.Dropout(args.dropout)
         self.dropout = args.dropout
 
-        # Jittor 目前不支持 Flash Attention，使用手动实现
         mask = jt.full((1, 1, args.max_seq_len, args.max_seq_len), float("-inf"))
         mask = jt.triu(mask, diagonal=1)
         self.mask = mask
@@ -282,18 +281,6 @@ class Transformer(Module):
 
         return optimizer
 
-    def estimate_mfu(self, fwdbwd_per_iter, dt):
-        N = sum(p.numel() for p in self.parameters())
-        cfg = self.params
-        L, H, Q, T = cfg.n_layers, cfg.n_heads, cfg.dim // cfg.n_heads, cfg.max_seq_len
-        flops_per_token = 6 * N + 12 * L * H * Q * T
-        flops_per_fwdbwd = flops_per_token * T
-        flops_per_iter = flops_per_fwdbwd * fwdbwd_per_iter
-        flops_achieved = flops_per_iter * (1.0 / dt)
-        flops_promised = 312e12
-        mfu = flops_achieved / flops_promised
-        return mfu
-
     @jt.no_grad()
     def generate(self, idx, eos, max_new_tokens, temperature=1.0, top_k=None):
         for _ in range(max_new_tokens):
@@ -316,54 +303,3 @@ class Transformer(Module):
                 break
 
         return idx
-
-    @jt.no_grad()
-    def export(self, filepath='model.bin'):
-        f = open(filepath, 'wb')
-
-        def serialize(t):
-            # Jittor 变量转为 numpy 数组
-            d = t.numpy().astype(np.float32).flatten()
-            b = struct.pack(f'{len(d)}f', *d)
-            f.write(b)
-
-        # 写入头信息
-        hidden_dim = self.layers[0].feed_forward.w1.weight.shape[0]
-        p = self.params
-        n_kv_heads = p.n_heads if p.n_kv_heads is None else p.n_kv_heads
-        header = struct.pack('iiiiiii', p.dim, hidden_dim, p.n_layers, p.n_heads,
-                             n_kv_heads, p.vocab_size, p.max_seq_len)
-        f.write(header)
-
-        # 嵌入权重
-        serialize(self.tok_embeddings.weight)
-
-        # 各层权重
-        for layer in self.layers:
-            serialize(layer.attention_norm.weight)
-        for layer in self.layers:
-            serialize(layer.attention.wq.weight)
-        for layer in self.layers:
-            serialize(layer.attention.wk.weight)
-        for layer in self.layers:
-            serialize(layer.attention.wv.weight)
-        for layer in self.layers:
-            serialize(layer.attention.wo.weight)
-        for layer in self.layers:
-            serialize(layer.ffn_norm.weight)
-        for layer in self.layers:
-            serialize(layer.feed_forward.w1.weight)
-        for layer in self.layers:
-            serialize(layer.feed_forward.w2.weight)
-        for layer in self.layers:
-            serialize(layer.feed_forward.w3.weight)
-
-        # 最终归一化
-        serialize(self.norm.weight)
-
-        # 位置编码
-        serialize(self.freqs_cos[:p.max_seq_len])
-        serialize(self.freqs_sin[:p.max_seq_len])
-
-        f.close()
-        print(f"wrote {filepath}")
