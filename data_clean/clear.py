@@ -219,26 +219,6 @@ def shuffle_parquet_dataset(parquet_file: str, shuffle_file: str, seed: int=2333
 
 
 def read_and_write_template_wiki(read_file: str, write_to_file: str, call_back: object, group_cnt: int=10000) -> None:
-    '''
-    处理数据读写模板，需要提供一个回调函数call_back，
-    read_file: 原始数据文件
-    write_to_file：处理后的要保存数据文件
-    call_back：函数输入一个字符串，输出一个处理后的字典dict，如果输入的字符串为无效数据，请返回None
-    group_cnt: parquet file分割行数
-    如：
-    >>> def call_back(inputs: str) -> dict:
-    >>>     if check(inputs) not valid:
-    >>>         return None
-    ...    
-    ...    do something for inputs
-    ...
-    >>>     my_dict = {
-    >>>             'prompt': inputs['p'],
-    >>>             'response': inputs['a1'] + inputs['a2'],
-    >>>             ...
-    >>>         }
-    >>>     return my_dict
-    '''
 
     log.info('process file:{}'.format(read_file), save_to_file=True)
     start = time.time()
@@ -277,17 +257,7 @@ def read_and_write_template_wiki(read_file: str, write_to_file: str, call_back: 
         end = time.time()
         log.info('原始文件:{}，共{}行，处理后剩余{}行，保存到文件：{}。耗时：{:.6}s'\
                     .format(read_file, raw_line_cnt, keep_line_cnt, write_to_file, end - start), save_to_file=True)
-
-'''
-{
-
-    "completion": "陈准，字道基，颍川郡许昌（今河南许昌）人。西晋官员。官至太尉。出身颍川陈氏，青州刺史陈佐之子，曹魏司空陈群族孙，曾祖父是陈群的叔叔陈谌。\n生平\n陈准早年居于乡里，被乡人称赞，有声望，晋惠帝元康五年（295年）官至中书令。时皇后贾南风擅权，由于张华、裴𬱟等人共同辅政，朝野安静。氐人齐万年反叛，陈准多次指斥负责赵王司马伦、梁王司马肜等不任军事，荐举由大将周处、孟观指挥作战。司马肜忌恨周处，致使周处力战而死。后来朝廷从了陈准的建议，派孟观督师征讨齐万年胜利。永康元年（300年），司马伦发动政变，废杀贾南风，陈准有功，封海陵公。司马伦意图篡位，淮南王司马允发兵讨伐，围困司马伦。陈准暗地支持司马允，骗晋惠帝说打出劝和驺虞幡，其实派人打出督战的令旗白虎幡。可是，派去的人被司马伦收买，诱杀了司马允。陈准本有心袒护司马允，到头来反而救了司马伦。司马伦不知其故，提升陈准为太尉，录尚书事，改封广陵公。不久，陈准去世，谥号元。\n家庭\n平辈\n* 弟陈徽，太子左卫率，淮南王司马允讨赵王司马伦，曾集结东宫兵在宫内响应淮南王。\n* 弟陈戴，国子助教。\n后代\n* 子陈眕，西晋左卫将军，幽州刺史。\n* 子陈匡，司马遹东宫侍读。\n* 子陈规\n* 孙陈逵，陈眕子，东晋梁淮南二郡太守。",
-
-    "source": "wikipedia.zh2307"
-
-  },
-'''
-
+        
 def process_wiki(response_less_word: int=15) -> None:
     file_names = [
         '../data/wikipedia-cn-20230720-filtered.json',
@@ -315,26 +285,6 @@ def process_wiki(response_less_word: int=15) -> None:
         
 
 def read_and_write_template_baike(read_file: str, write_to_file: str, call_back: object, group_cnt: int=10000) -> None:
-    '''
-    处理数据读写模板，需要提供一个回调函数call_back，
-    read_file: 原始数据文件
-    write_to_file：处理后的要保存数据文件
-    call_back：函数输入一个字符串，输出一个处理后的字典dict，如果输入的字符串为无效数据，请返回None
-    group_cnt: parquet file分割行数
-    如：
-    >>> def call_back(inputs: str) -> dict:
-    >>>     if check(inputs) not valid:
-    >>>         return None
-    ...    
-    ...    do something for inputs
-    ...
-    >>>     my_dict = {
-    >>>             'prompt': inputs['p'],
-    >>>             'response': inputs['a1'] + inputs['a2'],
-    >>>             ...
-    >>>         }
-    >>>     return my_dict
-    '''
 
     log.info('process file:{}'.format(read_file), save_to_file=True)
     start = time.time()
@@ -402,31 +352,14 @@ def process_baike(response_less_word: int=15) -> None:
         read_file = file_name
         read_and_write_template_baike(read_file, save_file_name, process_function)
 
-#https://blog.csdn.net/m0_63834988/article/details/135000567
-#了解rich,pyarrow,parquet等包,minhash算法
-
 if __name__ == '__main__':
-    
-    #查看原始文件内容
-    #data=open('../data/563w_baidubaike.json','r')
-    #for line in data.readlines()[:10]:
-    #    print(line)
-    
-    #process_wiki()
-    # 内容查看
-    #parquet_table = pq.read_table('./data/baike.parquet')
-    #data = parquet_table.to_pandas()
-    #print(data.head())
 
-    # 将原始文件进行短文本过滤 + 存储为.parquet格式，可以有效减小存储占用
+    data=open('../data/563w_baidubaike.json','r')
+    for line in data.readlines()[:10]:
+        print(line)
+    
+    process_wiki()
     process_baike()
     
-    #合并
-    #merge_dataset_as_single_file()
-    
-    #去重
-    # minhash (推荐)
     remove_dataset_duplicate_rows()
 
-    # simhash
-    #remove_dataset_duplicate_rows_simhash()
